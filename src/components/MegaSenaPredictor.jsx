@@ -69,14 +69,14 @@ function generatePrediction(count, timestamp, isVirada, luckyNumber, frequencies
   const baseWeight = isVirada ? 2 : 280;
 
   const weightedPool = [];
-  
+
   for (let num = 1; num <= 60; num++) {
     let weight = (frequency[num] || 0) + baseWeight;
-    
+
     if (hotNumbers.includes(num)) {
       weight *= 1.7;
     }
-    
+
     if (luckyNumber && luckyNumber >= 1 && luckyNumber <= 60) {
       if (num === luckyNumber) {
         weight *= 2.6;
@@ -91,46 +91,46 @@ function generatePrediction(count, timestamp, isVirada, luckyNumber, frequencies
         weight *= 1.07;
       }
     }
-    
+
     const hour = date.getHours();
     const dayOfWeek = date.getDay();
     const dayOfMonth = date.getDate();
-    
+
     if (hour < 12) {
       if (num <= 30) weight *= 1.07;
     } else {
       if (num > 30) weight *= 1.07;
     }
-    
+
     if ((num % 7) === dayOfWeek) {
       weight *= 1.16;
     }
-    
+
     if (num === dayOfMonth || num === (dayOfMonth + 30) % 60 + 1) {
       weight *= 1.25;
     }
-    
+
     const entries = Math.max(1, Math.round(weight));
     for (let i = 0; i < entries; i++) {
       weightedPool.push(num);
     }
   }
-  
+
   const selected = new Set();
   let attempts = 0;
-  
+
   while (selected.size < count && attempts < 1000) {
     const randomIndex = Math.floor(getNextRandom() * weightedPool.length);
     const num = weightedPool[randomIndex];
     selected.add(num);
     attempts++;
   }
-  
+
   while (selected.size < count) {
     const num = Math.floor(getNextRandom() * 60) + 1;
     selected.add(num);
   }
-  
+
   return Array.from(selected).sort((a, b) => a - b);
 }
 
@@ -138,56 +138,56 @@ function generatePrediction(count, timestamp, isVirada, luckyNumber, frequencies
 function shuffleArray(array, seed) {
   const result = [...array];
   let currentSeed = seed;
-  
+
   const getNextRandom = () => {
     currentSeed++;
     return seededRandom(currentSeed);
   };
-  
+
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(getNextRandom() * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
-  
+
   return result;
 }
 
 // Generate shuffled sets from user numbers
 function generateShuffledSets(userNumbers, numbersPerSet, numberOfSets, timestamp) {
   const date = new Date(timestamp);
-  let baseSeed = timestamp + 
-    date.getDate() * 1000000 + 
+  let baseSeed = timestamp +
+    date.getDate() * 1000000 +
     date.getMilliseconds() * 10000000;
-  
+
   const sets = [];
   const usedCombinations = new Set();
   let attempts = 0;
   const maxAttempts = numberOfSets * 100;
-  
+
   while (sets.length < numberOfSets && attempts < maxAttempts) {
     const shuffled = shuffleArray(userNumbers, baseSeed + attempts);
     const selectedSet = shuffled.slice(0, numbersPerSet).sort((a, b) => a - b);
     const combinationKey = selectedSet.join('-');
-    
+
     if (!usedCombinations.has(combinationKey)) {
       usedCombinations.add(combinationKey);
       sets.push(selectedSet);
     }
-    
+
     attempts++;
   }
-  
+
   return sets;
 }
 
 // Ball component
 function LotteryBall({ number, delay, isRevealed, isLucky, size = 'normal' }) {
-  const sizeClasses = size === 'small' 
+  const sizeClasses = size === 'small'
     ? 'w-10 h-10 md:w-12 md:h-12 text-sm md:text-base'
     : 'w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl';
-    
+
   return (
-    <div 
+    <div
       className={`
         ${sizeClasses} rounded-full flex items-center justify-center
         font-bold text-white shadow-lg
@@ -195,10 +195,10 @@ function LotteryBall({ number, delay, isRevealed, isLucky, size = 'normal' }) {
         ${isRevealed ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
       `}
       style={{
-        background: isLucky 
+        background: isLucky
           ? 'linear-gradient(145deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)'
           : 'linear-gradient(145deg, #22c55e 0%, #16a34a 50%, #15803d 100%)',
-        boxShadow: isLucky 
+        boxShadow: isLucky
           ? '0 4px 15px rgba(251, 191, 36, 0.5), inset 0 2px 10px rgba(255,255,255,0.3)'
           : '0 4px 15px rgba(34, 197, 94, 0.4), inset 0 2px 10px rgba(255,255,255,0.3)',
         transitionDelay: `${delay}ms`
@@ -333,21 +333,18 @@ function StatisticsSection({ frequencies, lotteryData, isVirada }) {
   const top10 = sortedNumbers.slice(0, 10);
   const bottom10 = sortedNumbers.slice(-10).reverse();
 
-  const tabClass = (tab) => `px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-    activeTab === tab
-      ? isVirada
-        ? 'bg-purple-500 text-white'
-        : 'bg-green-500 text-white'
-      : 'text-gray-300 hover:bg-white/10'
-  }`;
+  const tabClass = (tab) => `px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab
+    ? isVirada
+      ? 'bg-purple-500 text-white'
+      : 'bg-green-500 text-white'
+    : 'text-gray-300 hover:bg-white/10'
+    }`;
 
   return (
-    <div className={`mt-6 backdrop-blur rounded-2xl p-4 md:p-6 border ${
-      isVirada ? 'bg-purple-500/10 border-purple-300/20' : 'bg-white/10 border-white/20'
-    }`}>
-      <h3 className={`font-bold text-lg mb-4 flex items-center gap-2 ${
-        isVirada ? 'text-purple-200' : 'text-green-200'
+    <div className={`mt-6 backdrop-blur rounded-2xl p-4 md:p-6 border ${isVirada ? 'bg-purple-500/10 border-purple-300/20' : 'bg-white/10 border-white/20'
       }`}>
+      <h3 className={`font-bold text-lg mb-4 flex items-center gap-2 ${isVirada ? 'text-purple-200' : 'text-green-200'
+        }`}>
         <span>📊</span> Análise Estatística
         <span className="text-xs font-normal opacity-70">
           ({stats.totalDraws?.toLocaleString()} sorteios)
@@ -389,21 +386,19 @@ function StatisticsSection({ frequencies, lotteryData, isVirada }) {
                   <div key={num} className="flex flex-col items-center group relative">
                     <div className="w-full h-16 flex items-end justify-center">
                       <div
-                        className={`w-full rounded-t transition-all ${
-                          isHot
-                            ? 'bg-gradient-to-t from-yellow-500 to-orange-400'
-                            : isCold
-                              ? 'bg-gradient-to-t from-blue-500 to-cyan-400'
-                              : isVirada
-                                ? 'bg-gradient-to-t from-purple-500 to-pink-400'
-                                : 'bg-gradient-to-t from-green-500 to-emerald-400'
-                        }`}
+                        className={`w-full rounded-t transition-all ${isHot
+                          ? 'bg-gradient-to-t from-yellow-500 to-orange-400'
+                          : isCold
+                            ? 'bg-gradient-to-t from-blue-500 to-cyan-400'
+                            : isVirada
+                              ? 'bg-gradient-to-t from-purple-500 to-pink-400'
+                              : 'bg-gradient-to-t from-green-500 to-emerald-400'
+                          }`}
                         style={{ height: `${Math.max(height, 5)}%` }}
                       />
                     </div>
-                    <span className={`text-[10px] mt-1 ${
-                      isHot ? 'text-yellow-400 font-bold' : isCold ? 'text-blue-400' : 'text-gray-400'
-                    }`}>
+                    <span className={`text-[10px] mt-1 ${isHot ? 'text-yellow-400 font-bold' : isCold ? 'text-blue-400' : 'text-gray-400'
+                      }`}>
                       {num.toString().padStart(2, '0')}
                     </span>
                     {/* Tooltip */}
@@ -436,9 +431,8 @@ function StatisticsSection({ frequencies, lotteryData, isVirada }) {
                 {top10.map(([num, count], idx) => (
                   <div key={num} className="flex items-center gap-2">
                     <span className="text-yellow-400 font-bold w-5 text-xs">{idx + 1}.</span>
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                      isVirada ? 'bg-purple-500' : 'bg-green-500'
-                    }`}>
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${isVirada ? 'bg-purple-500' : 'bg-green-500'
+                      }`}>
                       {num.toString().padStart(2, '0')}
                     </span>
                     <div className="flex-1 h-4 bg-black/30 rounded-full overflow-hidden">
@@ -459,9 +453,8 @@ function StatisticsSection({ frequencies, lotteryData, isVirada }) {
                 {bottom10.map(([num, count], idx) => (
                   <div key={num} className="flex items-center gap-2">
                     <span className="text-blue-400 font-bold w-5 text-xs">{idx + 1}.</span>
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                      isVirada ? 'bg-purple-500' : 'bg-green-500'
-                    }`}>
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${isVirada ? 'bg-purple-500' : 'bg-green-500'
+                      }`}>
                       {num.toString().padStart(2, '0')}
                     </span>
                     <div className="flex-1 h-4 bg-black/30 rounded-full overflow-hidden">
@@ -660,11 +653,10 @@ function StatisticsSection({ frequencies, lotteryData, isVirada }) {
                     <span className="text-gray-300 text-sm w-14">{range}</span>
                     <div className="flex-1 h-6 bg-black/30 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${
-                          isVirada
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500'
-                            : 'bg-gradient-to-r from-green-500 to-emerald-400'
-                        }`}
+                        className={`h-full rounded-full transition-all ${isVirada
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500'
+                          : 'bg-gradient-to-r from-green-500 to-emerald-400'
+                          }`}
                         style={{ width: `${maxDist > 0 ? (count / maxDist) * 100 : 0}%` }}
                       />
                     </div>
@@ -813,53 +805,60 @@ function LatestDraws({ draws, isVirada }) {
   };
 
   const getPrizeInfo = (draw, hits) => {
-    if (!draw.premiacao) return { winners: 0, prize: 'R$ 0,00' };
+    if (!draw || !draw.premiacao || !Array.isArray(draw.premiacao)) return { winners: 0, prize: 'R$ 0,00' };
 
     const prizeData = draw.premiacao.find(p => {
-      const desc = p.descricao || p.descricaoFaixa || '';
-      return desc.includes(`${hits} acertos`) || desc.includes(`${hits} Acertos`) || p.faixa === (7 - hits);
+      if (!p) return false;
+      const desc = p.descricao || p.descricaoFaixa || p.nome || '';
+      return desc.includes(`${hits} acertos`) || desc.includes(`${hits} Acertos`) || p.faixa === (7 - hits) || p.acertos === hits;
     });
 
     if (!prizeData) return { winners: 0, prize: 'R$ 0,00' };
 
     return {
-      winners: prizeData.ganhadores || prizeData.numeroDeGanhadores || 0,
-      prize: formatCurrency(prizeData.valorPremio || prizeData.valor || 0)
+      winners: prizeData.ganhadores || prizeData.numeroDeGanhadores || prizeData.quantidade_ganhadores || 0,
+      prize: formatCurrency(prizeData.valorPremio || prizeData.valor || prizeData.valor_total || 0)
     };
   };
 
   return (
-    <div className={`mt-6 backdrop-blur rounded-2xl p-4 md:p-6 border ${
-      isVirada ? 'bg-purple-500/10 border-purple-300/20' : 'bg-white/10 border-white/20'
-    }`}>
-      <h3 className={`font-bold text-lg mb-4 flex items-center gap-2 ${
-        isVirada ? 'text-purple-200' : 'text-green-200'
+    <div className={`mt-6 backdrop-blur rounded-2xl p-4 md:p-6 border ${isVirada ? 'bg-purple-500/10 border-purple-300/20' : 'bg-white/10 border-white/20'
       }`}>
+      <h3 className={`font-bold text-lg mb-4 flex items-center gap-2 ${isVirada ? 'text-purple-200' : 'text-green-200'
+        }`}>
         <span>📋</span> Últimos Resultados
       </h3>
 
       <div className="space-y-4">
-        {draws.map((draw, index) => {
-          const numbers = draw.dezenas || draw.listaDezenas || [];
-          const date = draw.data || draw.dataApuracao || '';
-          const contest = draw.concurso || draw.numero || '';
-          const prize6 = getPrizeInfo(draw, 6);
-          const prize5 = getPrizeInfo(draw, 5);
-          const prize4 = getPrizeInfo(draw, 4);
+        {Array.isArray(draws) && draws.map((draw, index) => {
+          if (!draw) return null;
+          const numbers = Array.isArray(draw.dezenas) ? draw.dezenas : (Array.isArray(draw.listaDezenas) ? draw.listaDezenas : []);
+          const date = draw.data || draw.dataApuracao || draw.data_concurso || '';
+          const contest = draw.concurso || draw.numero || draw.numero_concurso || '';
+
+          let prize6, prize5, prize4;
+          try {
+            prize6 = getPrizeInfo(draw, 6);
+            prize5 = getPrizeInfo(draw, 5);
+            prize4 = getPrizeInfo(draw, 4);
+          } catch (e) {
+            console.error("Error calculating prize", e);
+            prize6 = { winners: 0, prize: 'Erro' };
+            prize5 = { winners: 0, prize: 'Erro' };
+            prize4 = { winners: 0, prize: 'Erro' };
+          }
 
           return (
             <div
               key={contest || index}
-              className={`rounded-xl p-4 border ${
-                isVirada
-                  ? 'bg-purple-900/30 border-purple-500/20'
-                  : 'bg-green-900/30 border-green-500/20'
-              }`}
+              className={`rounded-xl p-4 border ${isVirada
+                ? 'bg-purple-900/30 border-purple-500/20'
+                : 'bg-green-900/30 border-green-500/20'
+                }`}
             >
               {/* Header */}
-              <div className={`text-sm font-semibold mb-3 ${
-                isVirada ? 'text-purple-300' : 'text-green-300'
-              }`}>
+              <div className={`text-sm font-semibold mb-3 ${isVirada ? 'text-purple-300' : 'text-green-300'
+                }`}>
                 Resultado: Concurso {contest} ({formatDate(date)})
               </div>
 
@@ -872,11 +871,10 @@ function LatestDraws({ draws, isVirada }) {
                   {numbers.map((num, numIndex) => (
                     <span
                       key={numIndex}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white ${
-                        isVirada
-                          ? 'bg-gradient-to-br from-purple-500 to-pink-600'
-                          : 'bg-gradient-to-br from-green-500 to-emerald-600'
-                      }`}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white ${isVirada
+                        ? 'bg-gradient-to-br from-purple-500 to-pink-600'
+                        : 'bg-gradient-to-br from-green-500 to-emerald-600'
+                        }`}
                     >
                       {num.toString().padStart(2, '0')}
                     </span>
@@ -928,11 +926,11 @@ function DonationModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl border border-white/10">
         {/* Close button */}
@@ -958,9 +956,9 @@ function DonationModal({ isOpen, onClose }) {
 
         {/* QR Code */}
         <div className="bg-white rounded-2xl p-4 mb-4">
-          <img 
-            src="./qrcode_pix.jpg" 
-            alt="QR Code PIX" 
+          <img
+            src="./qrcode_pix.jpg"
+            alt="QR Code PIX"
             className="w-full h-auto rounded-lg"
           />
         </div>
@@ -972,11 +970,10 @@ function DonationModal({ isOpen, onClose }) {
           </label>
           <button
             onClick={handleCopyPix}
-            className={`w-full p-3 rounded-xl font-mono text-xs transition-all duration-200 ${
-              copied 
-                ? 'bg-green-500/20 border-2 border-green-500 text-green-400'
-                : 'bg-gray-800 border-2 border-gray-700 text-gray-300 hover:border-green-500 hover:text-white'
-            }`}
+            className={`w-full p-3 rounded-xl font-mono text-xs transition-all duration-200 ${copied
+              ? 'bg-green-500/20 border-2 border-green-500 text-green-400'
+              : 'bg-gray-800 border-2 border-gray-700 text-gray-300 hover:border-green-500 hover:text-white'
+              }`}
           >
             {copied ? (
               <span className="flex items-center justify-center gap-2">
@@ -1068,40 +1065,40 @@ export default function MegaSenaPredictor() {
       .split(/[\n,\-\s]+/)
       .map(n => parseInt(n.trim()))
       .filter(n => !isNaN(n) && n >= 1 && n <= 60);
-    
+
     return [...new Set(numbers)];
   };
 
   const handleGenerate = () => {
     if (isShuffle) {
       const userNumbers = parseUserNumbers(userNumbersInput);
-      
+
       if (userNumbers.length < numberCount) {
         setShuffleError(`Você precisa de pelo menos ${numberCount} números únicos. Você tem ${userNumbers.length}.`);
         return;
       }
-      
+
       const factorial = (n) => n <= 1 ? 1 : n * factorial(n - 1);
       const combinations = (n, r) => factorial(n) / (factorial(r) * factorial(n - r));
       const maxCombinations = combinations(userNumbers.length, numberCount);
-      
+
       if (numberOfSets > maxCombinations) {
         setShuffleError(`Com ${userNumbers.length} números, só é possível gerar ${Math.floor(maxCombinations)} jogos de ${numberCount} números.`);
         return;
       }
-      
+
       setShuffleError('');
       setIsGenerating(true);
       setIsRevealed(false);
       setShuffledSets([]);
-      
+
       setTimeout(() => {
         const timestamp = Date.now();
         const sets = generateShuffledSets(userNumbers, numberCount, numberOfSets, timestamp);
         setShuffledSets(sets);
         setGenerationTime(new Date(timestamp));
         setIsGenerating(false);
-        
+
         setTimeout(() => {
           setIsRevealed(true);
         }, 100);
@@ -1219,13 +1216,12 @@ export default function MegaSenaPredictor() {
         {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-3 mb-3">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${
-              isShuffle
-                ? 'bg-gradient-to-br from-orange-400 to-red-500'
-                : isVirada
-                  ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                  : 'bg-gradient-to-br from-yellow-400 to-yellow-600'
-            }`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${isShuffle
+              ? 'bg-gradient-to-br from-orange-400 to-red-500'
+              : isVirada
+                ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                : 'bg-gradient-to-br from-yellow-400 to-yellow-600'
+              }`}>
               <span className="text-2xl">{isShuffle ? '🔀' : isVirada ? '🎆' : '🍀'}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-white">
@@ -1276,7 +1272,7 @@ export default function MegaSenaPredictor() {
               <span className="text-yellow-100 text-xs">{dataError}</span>
             </div>
           )}
-          
+
           {/* Donation Button */}
           <button
             onClick={() => setShowDonation(true)}
@@ -1288,42 +1284,39 @@ export default function MegaSenaPredictor() {
         </div>
 
         {/* Ad Placement - Top */}
-        <AdSense adFormat="auto" fullWidthResponsive={true} />
+        {/* <AdSense adFormat="auto" fullWidthResponsive={true} /> */}
 
         {/* Main Card */}
         <div className={`backdrop-blur-lg rounded-3xl p-6 md:p-8 shadow-2xl border transition-all duration-300 ${getCardClass()}`}>
-          
+
           {/* Mode Toggle */}
           <div className="mb-6">
             <div className="flex justify-center">
               <div className="bg-black/20 rounded-2xl p-1 inline-flex flex-wrap justify-center gap-1">
                 <button
                   onClick={() => setMode('megasena')}
-                  className={`px-3 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                    mode === 'megasena'
-                      ? 'bg-green-500 text-white shadow-lg' 
-                      : 'text-green-200 hover:text-white'
-                  }`}
+                  className={`px-3 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${mode === 'megasena'
+                    ? 'bg-green-500 text-white shadow-lg'
+                    : 'text-green-200 hover:text-white'
+                    }`}
                 >
                   🍀 Mega-Sena
                 </button>
                 <button
                   onClick={() => setMode('virada')}
-                  className={`px-3 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                    mode === 'virada'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
-                      : 'text-purple-200 hover:text-white'
-                  }`}
+                  className={`px-3 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${mode === 'virada'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                    : 'text-purple-200 hover:text-white'
+                    }`}
                 >
                   🎆 Mega da Virada
                 </button>
                 <button
                   onClick={() => setMode('shuffle')}
-                  className={`px-3 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                    mode === 'shuffle'
-                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg' 
-                      : 'text-orange-200 hover:text-white'
-                  }`}
+                  className={`px-3 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${mode === 'shuffle'
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
+                    : 'text-orange-200 hover:text-white'
+                    }`}
                 >
                   🔀 Embaralhar
                 </button>
@@ -1350,7 +1343,7 @@ export default function MegaSenaPredictor() {
               <p className="text-amber-300/70 text-xs text-center mt-2">
                 {parseUserNumbers(userNumbersInput).length} números únicos detectados
               </p>
-              
+
               {/* Number of Sets */}
               <div className="mt-4">
                 <label className="block text-amber-100 text-sm font-medium mb-2 text-center">
@@ -1363,7 +1356,7 @@ export default function MegaSenaPredictor() {
                       onClick={() => setNumberOfSets(num)}
                       className={`
                         w-12 h-12 rounded-xl font-bold text-lg transition-all duration-200
-                        ${numberOfSets === num 
+                        ${numberOfSets === num
                           ? 'bg-gradient-to-br from-orange-400 to-red-500 text-white scale-110 shadow-lg'
                           : 'bg-white/20 text-white hover:bg-white/30'}
                       `}
@@ -1389,11 +1382,10 @@ export default function MegaSenaPredictor() {
                     value={luckyNumber}
                     onChange={handleLuckyNumberChange}
                     placeholder="1-60"
-                    className={`w-32 h-14 text-center text-xl font-bold rounded-2xl border-2 transition-all duration-200 outline-none ${
-                      isVirada
-                        ? 'bg-purple-900/50 border-purple-400/50 text-white placeholder-purple-300 focus:border-yellow-400'
-                        : 'bg-green-900/50 border-green-400/50 text-white placeholder-green-300 focus:border-yellow-400'
-                    }`}
+                    className={`w-32 h-14 text-center text-xl font-bold rounded-2xl border-2 transition-all duration-200 outline-none ${isVirada
+                      ? 'bg-purple-900/50 border-purple-400/50 text-white placeholder-purple-300 focus:border-yellow-400'
+                      : 'bg-green-900/50 border-green-400/50 text-white placeholder-green-300 focus:border-yellow-400'
+                      }`}
                   />
                   {luckyNumber && (
                     <button
@@ -1423,12 +1415,12 @@ export default function MegaSenaPredictor() {
                   onClick={() => setNumberCount(num)}
                   className={`
                     w-16 h-16 rounded-2xl font-bold text-xl transition-all duration-200
-                    ${numberCount === num 
+                    ${numberCount === num
                       ? isShuffle
                         ? 'bg-gradient-to-br from-orange-400 to-red-500 text-white scale-110 shadow-lg shadow-orange-500/30'
                         : isVirada
                           ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-purple-900 scale-110 shadow-lg shadow-orange-500/30'
-                          : 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-green-900 scale-110 shadow-lg shadow-yellow-500/30' 
+                          : 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-green-900 scale-110 shadow-lg shadow-yellow-500/30'
                       : 'bg-white/20 text-white hover:bg-white/30'}
                   `}
                 >
@@ -1448,8 +1440,8 @@ export default function MegaSenaPredictor() {
             className={`
               w-full py-4 px-6 rounded-2xl font-bold text-lg md:text-xl
               transition-all duration-300 transform
-              ${isGenerating 
-                ? 'bg-gray-500 cursor-not-allowed' 
+              ${isGenerating
+                ? 'bg-gray-500 cursor-not-allowed'
                 : isShuffle
                   ? 'bg-gradient-to-r from-orange-400 via-red-500 to-pink-500 hover:from-orange-500 hover:via-red-600 hover:to-pink-600 hover:scale-[1.02] active:scale-[0.98]'
                   : isVirada
@@ -1461,14 +1453,14 @@ export default function MegaSenaPredictor() {
             {isGenerating ? (
               <span className="flex items-center justify-center gap-2">
                 <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
                 Gerando...
               </span>
             ) : (
               <span className="flex items-center justify-center gap-2">
-                <span>{isShuffle ? '🔀' : isVirada ? '🎆' : '🎰'}</span> 
+                <span>{isShuffle ? '🔀' : isVirada ? '🎆' : '🎰'}</span>
                 {isShuffle ? `GERAR ${numberOfSets} JOGO${numberOfSets > 1 ? 'S' : ''}` : 'GERAR NÚMEROS DA SORTE'}
               </span>
             )}
@@ -1478,7 +1470,7 @@ export default function MegaSenaPredictor() {
           {isShuffle && shuffledSets.length > 0 && (
             <div className="mt-8 space-y-4">
               {shuffledSets.map((set, setIndex) => (
-                <div 
+                <div
                   key={setIndex}
                   className={`
                     bg-white/5 rounded-2xl p-4 transition-all duration-500
@@ -1491,9 +1483,9 @@ export default function MegaSenaPredictor() {
                   </div>
                   <div className="flex flex-wrap justify-center gap-2">
                     {set.map((num, index) => (
-                      <LotteryBall 
-                        key={`${setIndex}-${num}-${index}`} 
-                        number={num} 
+                      <LotteryBall
+                        key={`${setIndex}-${num}-${index}`}
+                        number={num}
                         delay={setIndex * 150 + index * 50}
                         isRevealed={isRevealed}
                         isLucky={false}
@@ -1503,7 +1495,7 @@ export default function MegaSenaPredictor() {
                   </div>
                 </div>
               ))}
-              
+
               {generationTime && isRevealed && (
                 <div className="mt-4 text-center">
                   <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
@@ -1522,16 +1514,16 @@ export default function MegaSenaPredictor() {
             <div className="mt-8">
               <div className="flex flex-wrap justify-center gap-3 md:gap-4">
                 {prediction.map((num, index) => (
-                  <LotteryBall 
-                    key={`${num}-${index}`} 
-                    number={num} 
+                  <LotteryBall
+                    key={`${num}-${index}`}
+                    number={num}
                     delay={index * 150}
                     isRevealed={isRevealed}
                     isLucky={usedLuckyNumber && num === usedLuckyNumber}
                   />
                 ))}
               </div>
-              
+
               {generationTime && isRevealed && (
                 <div className="mt-6 text-center space-y-2">
                   <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
@@ -1560,9 +1552,8 @@ export default function MegaSenaPredictor() {
         {/* Info Cards - Only show for non-shuffle modes */}
         {!isShuffle && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <div className={`backdrop-blur rounded-2xl p-4 border ${
-              isVirada ? 'bg-purple-500/10 border-purple-300/10' : 'bg-white/10 border-white/10'
-            }`}>
+            <div className={`backdrop-blur rounded-2xl p-4 border ${isVirada ? 'bg-purple-500/10 border-purple-300/10' : 'bg-white/10 border-white/10'
+              }`}>
               <h3 className="text-yellow-400 font-semibold mb-2 flex items-center gap-2">
                 🔥 Números Quentes {isVirada && '(Virada)'}
               </h3>
@@ -1575,10 +1566,9 @@ export default function MegaSenaPredictor() {
                   : 'Mais frequentes em todos os sorteios'}
               </p>
             </div>
-            
-            <div className={`backdrop-blur rounded-2xl p-4 border ${
-              isVirada ? 'bg-purple-500/10 border-purple-300/10' : 'bg-white/10 border-white/10'
-            }`}>
+
+            <div className={`backdrop-blur rounded-2xl p-4 border ${isVirada ? 'bg-purple-500/10 border-purple-300/10' : 'bg-white/10 border-white/10'
+              }`}>
               <h3 className="text-blue-400 font-semibold mb-2 flex items-center gap-2">
                 {isVirada ? '🎆 Campeão da Virada' : '❄️ Números "Atrasados"'}
               </h3>
@@ -1620,18 +1610,17 @@ export default function MegaSenaPredictor() {
         )}
 
         {/* Latest Draws Section - Only show for non-shuffle modes */}
-        {!isShuffle && lotteryData && (
+        {/* {!isShuffle && lotteryData && (
           <LatestDraws
             draws={lotteryData.slice(-10).reverse()}
             isVirada={isVirada}
           />
-        )}
+        )} */}
 
         {/* Algorithm Info - Normal modes */}
         {!isShuffle && (
-          <div className={`mt-6 backdrop-blur rounded-2xl p-4 border ${
-            isVirada ? 'bg-purple-500/5 border-purple-300/10' : 'bg-white/5 border-white/10'
-          }`}>
+          <div className={`mt-6 backdrop-blur rounded-2xl p-4 border ${isVirada ? 'bg-purple-500/5 border-purple-300/10' : 'bg-white/5 border-white/10'
+            }`}>
             <h3 className="text-green-200 font-semibold mb-2 text-sm">🧮 Como funciona?</h3>
             <ul className="text-green-300 text-xs space-y-1">
               {isVirada ? (
@@ -1654,7 +1643,7 @@ export default function MegaSenaPredictor() {
         )}
 
         {/* Ad Placement - Middle */}
-        <AdSense adFormat="auto" fullWidthResponsive={true} />
+        {/* <AdSense adFormat="auto" fullWidthResponsive={true} /> */}
 
         {/* Disclaimer */}
         <p className="text-center text-green-400/60 text-xs mt-6">
@@ -1662,7 +1651,7 @@ export default function MegaSenaPredictor() {
         </p>
 
         {/* Ad Placement - Bottom */}
-        <AdSense adFormat="auto" fullWidthResponsive={true} />
+        {/* <AdSense adFormat="auto" fullWidthResponsive={true} /> */}
       </div>
 
       {/* Footer */}

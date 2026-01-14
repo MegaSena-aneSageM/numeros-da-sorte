@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 
 // Primary API: Loteriascaixa.com (unofficial but reliable)
-const API_URL = 'https://loteriascaixa.com/api/mega-sena/';
+// Primary API: Loteriascaixa.com (broken) -> Using fallback as primary or a community API
+// const API_URL = 'https://loteriascaixa.com/api/mega-sena/';
+const API_URL = 'https://loteriascaixa-api.herokuapp.com/api/mega-sena';
 // Fallback API: Caixa official (with CORS proxy)
 const FALLBACK_API_URL = 'https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/';
 const CORS_PROXY = 'https://corsproxy.io/?';

@@ -6,11 +6,7 @@ export default function About() {
   useSEO(
     'Sobre o Mega-Sena Predictor | Gerador Inteligente de Números para a Mega-Sena',
     'Conheça o Mega-Sena Predictor: ferramenta gratuita de análise estatística para Mega-Sena. +2.950 sorteios analisados. Números quentes, números frios, estatísticas e previsões.',
-    'sobre mega-sena predictor, como funciona, análise estatística, algoritmo mega-sena, números que mais saem, números que menos saem, gerador loteria',
-    'Quais são os números mais sorteados na história da Mega-Sena',
-    'Como usar inteligência artificial para escolher números da loteria',
-    'Análise estatística de sorteios da Mega-Sena',
-    'Gerador de números para Mega-Sena e Mega da Virada'
+    'sobre mega-sena predictor, como funciona, análise estatística, algoritmo mega-sena, números que mais saem, números que menos saem, gerador loteria'
   );
 
   return (
