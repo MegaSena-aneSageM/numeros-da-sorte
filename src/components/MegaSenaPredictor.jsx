@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLotteryData } from '../hooks/useLotteryData';
 import AdSense from './AdSense';
 import Footer from './Footer';
@@ -212,577 +213,9 @@ function LotteryBall({ number, delay, isRevealed, isLucky, size = 'normal' }) {
   );
 }
 
-// Statistical Analysis Component
-function StatisticsSection({ frequencies, lotteryData, isVirada }) {
-  const [activeTab, setActiveTab] = useState('frequency');
-
-  // Calculate comprehensive statistics
-  const stats = useMemo(() => {
-    if (!frequencies || !frequencies.historical) {
-      return null;
-    }
-
-    const freq = isVirada ? frequencies.virada : frequencies.historical;
-    const values = Object.values(freq).filter(v => v > 0);
-
-    if (values.length === 0) return null;
-
-    // Sort values for calculations
-    const sortedValues = [...values].sort((a, b) => a - b);
-    const n = sortedValues.length;
-
-    // Mean (average)
-    const sum = values.reduce((a, b) => a + b, 0);
-    const mean = sum / n;
-
-    // Median
-    const mid = Math.floor(n / 2);
-    const median = n % 2 !== 0
-      ? sortedValues[mid]
-      : (sortedValues[mid - 1] + sortedValues[mid]) / 2;
-
-    // Mode (most frequent value)
-    const valueCount = {};
-    values.forEach(v => {
-      valueCount[v] = (valueCount[v] || 0) + 1;
-    });
-    const maxCount = Math.max(...Object.values(valueCount));
-    const modes = Object.entries(valueCount)
-      .filter(([_, count]) => count === maxCount)
-      .map(([val]) => parseInt(val));
-
-    // Range
-    const min = sortedValues[0];
-    const max = sortedValues[n - 1];
-    const range = max - min;
-
-    // Variance and Standard Deviation
-    const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
-    const variance = squaredDiffs.reduce((a, b) => a + b, 0) / n;
-    const stdDev = Math.sqrt(variance);
-
-    // Coefficient of Variation
-    const cv = (stdDev / mean) * 100;
-
-    // Quartiles
-    const q1Index = Math.floor(n * 0.25);
-    const q3Index = Math.floor(n * 0.75);
-    const q1 = sortedValues[q1Index];
-    const q3 = sortedValues[q3Index];
-    const iqr = q3 - q1;
-
-    // Frequency distribution by ranges
-    const distribution = {
-      '1-10': 0, '11-20': 0, '21-30': 0, '31-40': 0, '41-50': 0, '51-60': 0
-    };
-    Object.entries(freq).forEach(([num, count]) => {
-      const n = parseInt(num);
-      if (n <= 10) distribution['1-10'] += count;
-      else if (n <= 20) distribution['11-20'] += count;
-      else if (n <= 30) distribution['21-30'] += count;
-      else if (n <= 40) distribution['31-40'] += count;
-      else if (n <= 50) distribution['41-50'] += count;
-      else distribution['51-60'] += count;
-    });
-
-    // Odd vs Even distribution
-    let oddCount = 0, evenCount = 0;
-    Object.entries(freq).forEach(([num, count]) => {
-      if (parseInt(num) % 2 === 0) evenCount += count;
-      else oddCount += count;
-    });
-
-    // Low vs High distribution (1-30 vs 31-60)
-    let lowCount = 0, highCount = 0;
-    Object.entries(freq).forEach(([num, count]) => {
-      if (parseInt(num) <= 30) lowCount += count;
-      else highCount += count;
-    });
-
-    return {
-      mean: mean.toFixed(2),
-      median: median.toFixed(2),
-      modes,
-      min,
-      max,
-      range,
-      variance: variance.toFixed(2),
-      stdDev: stdDev.toFixed(2),
-      cv: cv.toFixed(2),
-      q1,
-      q3,
-      iqr,
-      distribution,
-      oddCount,
-      evenCount,
-      lowCount,
-      highCount,
-      totalDraws: isVirada ? frequencies.stats?.viradaDrawings : frequencies.stats?.totalDrawings
-    };
-  }, [frequencies, isVirada]);
-
-  if (!stats) return null;
-
-  // Get frequency data for bar chart
-  const freq = isVirada ? frequencies.virada : frequencies.historical;
-  const maxFreq = Math.max(...Object.values(freq));
-
-  // Top 10 and Bottom 10 numbers
-  const sortedNumbers = Object.entries(freq)
-    .sort((a, b) => b[1] - a[1]);
-  const top10 = sortedNumbers.slice(0, 10);
-  const bottom10 = sortedNumbers.slice(-10).reverse();
-
-  const tabClass = (tab) => `px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab
-    ? isVirada
-      ? 'bg-purple-500 text-white'
-      : 'bg-green-500 text-white'
-    : 'text-gray-300 hover:bg-white/10'
-    }`;
-
-  return (
-    <div className={`mt-6 backdrop-blur rounded-2xl p-4 md:p-6 border ${isVirada ? 'bg-purple-500/10 border-purple-300/20' : 'bg-white/10 border-white/20'
-      }`}>
-      <h3 className={`font-bold text-lg mb-4 flex items-center gap-2 ${isVirada ? 'text-purple-200' : 'text-green-200'
-        }`}>
-        <span>📊</span> Análise Estatística
-        <span className="text-xs font-normal opacity-70">
-          ({stats.totalDraws?.toLocaleString()} sorteios)
-        </span>
-      </h3>
-
-      {/* Tab Navigation */}
-      <div className="flex flex-wrap gap-2 mb-4 bg-black/20 rounded-xl p-1">
-        <button onClick={() => setActiveTab('frequency')} className={tabClass('frequency')}>
-          📈 Frequência
-        </button>
-        <button onClick={() => setActiveTab('central')} className={tabClass('central')}>
-          📐 Tendência Central
-        </button>
-        <button onClick={() => setActiveTab('dispersion')} className={tabClass('dispersion')}>
-          📏 Dispersão
-        </button>
-        <button onClick={() => setActiveTab('distribution')} className={tabClass('distribution')}>
-          🎯 Distribuição
-        </button>
-      </div>
-
-      {/* Frequency Tab - Bar Chart */}
-      {activeTab === 'frequency' && (
-        <div className="space-y-4">
-          {/* Full Frequency Bar Chart */}
-          <div className={`rounded-xl p-4 ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-            <h4 className={`text-sm font-semibold mb-3 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-              Frequência de Todos os Números (1-60)
-            </h4>
-            <div className="grid grid-cols-10 gap-1">
-              {Array.from({ length: 60 }, (_, i) => i + 1).map(num => {
-                const count = freq[num] || 0;
-                const height = maxFreq > 0 ? (count / maxFreq) * 100 : 0;
-                const isHot = top10.some(([n]) => parseInt(n) === num);
-                const isCold = bottom10.some(([n]) => parseInt(n) === num);
-
-                return (
-                  <div key={num} className="flex flex-col items-center group relative">
-                    <div className="w-full h-16 flex items-end justify-center">
-                      <div
-                        className={`w-full rounded-t transition-all ${isHot
-                          ? 'bg-gradient-to-t from-yellow-500 to-orange-400'
-                          : isCold
-                            ? 'bg-gradient-to-t from-blue-500 to-cyan-400'
-                            : isVirada
-                              ? 'bg-gradient-to-t from-purple-500 to-pink-400'
-                              : 'bg-gradient-to-t from-green-500 to-emerald-400'
-                          }`}
-                        style={{ height: `${Math.max(height, 5)}%` }}
-                      />
-                    </div>
-                    <span className={`text-[10px] mt-1 ${isHot ? 'text-yellow-400 font-bold' : isCold ? 'text-blue-400' : 'text-gray-400'
-                      }`}>
-                      {num.toString().padStart(2, '0')}
-                    </span>
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full mb-1 hidden group-hover:block z-10">
-                      <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
-                        {num}: {count}x ({stats.totalDraws ? ((count / (stats.totalDraws * 6)) * 100).toFixed(1) : '0'}%)
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex justify-center gap-4 mt-3 text-xs">
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded bg-gradient-to-r from-yellow-500 to-orange-400"></span>
-                <span className="text-yellow-400">Top 10</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded bg-gradient-to-r from-blue-500 to-cyan-400"></span>
-                <span className="text-blue-400">Bottom 10</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Top and Bottom Numbers */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className={`rounded-xl p-4 ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <h4 className="text-yellow-400 font-semibold text-sm mb-2">🔥 Top 10 Mais Frequentes</h4>
-              <div className="space-y-2">
-                {top10.map(([num, count], idx) => (
-                  <div key={num} className="flex items-center gap-2">
-                    <span className="text-yellow-400 font-bold w-5 text-xs">{idx + 1}.</span>
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${isVirada ? 'bg-purple-500' : 'bg-green-500'
-                      }`}>
-                      {num.toString().padStart(2, '0')}
-                    </span>
-                    <div className="flex-1 h-4 bg-black/30 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-yellow-500 to-orange-400 rounded-full"
-                        style={{ width: `${(count / maxFreq) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-gray-300 text-xs w-12 text-right">{count}x</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className={`rounded-xl p-4 ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <h4 className="text-blue-400 font-semibold text-sm mb-2">❄️ Top 10 Menos Frequentes</h4>
-              <div className="space-y-2">
-                {bottom10.map(([num, count], idx) => (
-                  <div key={num} className="flex items-center gap-2">
-                    <span className="text-blue-400 font-bold w-5 text-xs">{idx + 1}.</span>
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${isVirada ? 'bg-purple-500' : 'bg-green-500'
-                      }`}>
-                      {num.toString().padStart(2, '0')}
-                    </span>
-                    <div className="flex-1 h-4 bg-black/30 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"
-                        style={{ width: `${(count / maxFreq) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-gray-300 text-xs w-12 text-right">{count}x</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Central Tendency Tab */}
-      {activeTab === 'central' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Mean */}
-            <div className={`rounded-xl p-4 text-center ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <div className="text-3xl mb-2">📊</div>
-              <h4 className={`font-semibold text-sm mb-1 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-                Média (Mean)
-              </h4>
-              <div className="text-2xl font-bold text-white">{stats.mean}</div>
-              <p className="text-xs text-gray-400 mt-2">
-                Cada número apareceu em média {stats.mean} vezes
-              </p>
-            </div>
-
-            {/* Median */}
-            <div className={`rounded-xl p-4 text-center ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <div className="text-3xl mb-2">📈</div>
-              <h4 className={`font-semibold text-sm mb-1 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-                Mediana (Median)
-              </h4>
-              <div className="text-2xl font-bold text-white">{stats.median}</div>
-              <p className="text-xs text-gray-400 mt-2">
-                Valor central da distribuição de frequências
-              </p>
-            </div>
-
-            {/* Mode */}
-            <div className={`rounded-xl p-4 text-center ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <div className="text-3xl mb-2">🎯</div>
-              <h4 className={`font-semibold text-sm mb-1 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-                Moda (Mode)
-              </h4>
-              <div className="text-2xl font-bold text-white">
-                {stats.modes.length > 3
-                  ? `${stats.modes.slice(0, 3).join(', ')}...`
-                  : stats.modes.join(', ')}
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                Frequência mais comum entre os números
-              </p>
-            </div>
-          </div>
-
-          {/* Visual Explanation */}
-          <div className={`rounded-xl p-4 ${isVirada ? 'bg-purple-900/20' : 'bg-green-900/20'}`}>
-            <h4 className={`font-semibold text-sm mb-3 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-              📚 O que significam estas medidas?
-            </h4>
-            <div className="space-y-2 text-xs text-gray-300">
-              <p><strong className="text-yellow-400">Média:</strong> Soma de todas as frequências dividida pelo total de números (60). Indica quantas vezes, em média, cada número foi sorteado.</p>
-              <p><strong className="text-yellow-400">Mediana:</strong> O valor do meio quando todas as frequências são ordenadas. Menos sensível a valores extremos que a média.</p>
-              <p><strong className="text-yellow-400">Moda:</strong> A frequência que mais se repete. Mostra qual é o padrão mais comum de aparições.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Dispersion Tab */}
-      {activeTab === 'dispersion' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Range */}
-            <div className={`rounded-xl p-4 text-center ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <h4 className={`font-semibold text-xs mb-1 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-                Amplitude
-              </h4>
-              <div className="text-xl font-bold text-white">{stats.range}</div>
-              <p className="text-xs text-gray-400 mt-1">Max - Min</p>
-            </div>
-
-            {/* Std Dev */}
-            <div className={`rounded-xl p-4 text-center ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <h4 className={`font-semibold text-xs mb-1 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-                Desvio Padrão
-              </h4>
-              <div className="text-xl font-bold text-white">{stats.stdDev}</div>
-              <p className="text-xs text-gray-400 mt-1">σ (sigma)</p>
-            </div>
-
-            {/* Variance */}
-            <div className={`rounded-xl p-4 text-center ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <h4 className={`font-semibold text-xs mb-1 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-                Variância
-              </h4>
-              <div className="text-xl font-bold text-white">{stats.variance}</div>
-              <p className="text-xs text-gray-400 mt-1">σ²</p>
-            </div>
-
-            {/* CV */}
-            <div className={`rounded-xl p-4 text-center ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <h4 className={`font-semibold text-xs mb-1 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-                Coef. Variação
-              </h4>
-              <div className="text-xl font-bold text-white">{stats.cv}%</div>
-              <p className="text-xs text-gray-400 mt-1">CV</p>
-            </div>
-          </div>
-
-          {/* Box Plot Visualization */}
-          <div className={`rounded-xl p-4 ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-            <h4 className={`font-semibold text-sm mb-3 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-              📦 Box Plot (Quartis)
-            </h4>
-            <div className="relative h-16 flex items-center">
-              {/* Scale line */}
-              <div className="absolute w-full h-1 bg-gray-600 rounded"></div>
-
-              {/* Min marker */}
-              <div
-                className="absolute w-1 h-8 bg-blue-400 rounded"
-                style={{ left: `${((stats.min - stats.min) / (stats.max - stats.min)) * 100}%` }}
-              >
-                <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs text-blue-400">{stats.min}</span>
-              </div>
-
-              {/* Q1 to Q3 box */}
-              <div
-                className={`absolute h-10 rounded ${isVirada ? 'bg-purple-500/50' : 'bg-green-500/50'} border-2 ${isVirada ? 'border-purple-400' : 'border-green-400'}`}
-                style={{
-                  left: `${((stats.q1 - stats.min) / (stats.max - stats.min)) * 100}%`,
-                  width: `${((stats.q3 - stats.q1) / (stats.max - stats.min)) * 100}%`
-                }}
-              >
-                <span className="absolute -top-5 left-0 text-xs text-gray-300">Q1: {stats.q1}</span>
-                <span className="absolute -top-5 right-0 text-xs text-gray-300">Q3: {stats.q3}</span>
-              </div>
-
-              {/* Median line */}
-              <div
-                className="absolute w-1 h-12 bg-yellow-400 rounded"
-                style={{ left: `${((parseFloat(stats.median) - stats.min) / (stats.max - stats.min)) * 100}%` }}
-              >
-                <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs text-yellow-400">Med</span>
-              </div>
-
-              {/* Max marker */}
-              <div
-                className="absolute w-1 h-8 bg-red-400 rounded"
-                style={{ left: '100%' }}
-              >
-                <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs text-red-400">{stats.max}</span>
-              </div>
-            </div>
-
-            <div className="mt-8 text-xs text-gray-400 text-center">
-              IQR (Intervalo Interquartil): {stats.iqr}
-            </div>
-          </div>
-
-          {/* Explanation */}
-          <div className={`rounded-xl p-4 ${isVirada ? 'bg-purple-900/20' : 'bg-green-900/20'}`}>
-            <h4 className={`font-semibold text-sm mb-3 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-              📚 Interpretação
-            </h4>
-            <div className="space-y-2 text-xs text-gray-300">
-              <p><strong className="text-yellow-400">Desvio Padrão ({stats.stdDev}):</strong> {parseFloat(stats.cv) < 10 ? 'Baixa variabilidade - os números aparecem com frequência similar' : parseFloat(stats.cv) < 20 ? 'Variabilidade moderada - há alguma diferença entre números quentes e frios' : 'Alta variabilidade - grande diferença entre números mais e menos sorteados'}</p>
-              <p><strong className="text-yellow-400">Coef. Variação ({stats.cv}%):</strong> {parseFloat(stats.cv) < 15 ? 'O sorteio é relativamente equilibrado' : 'Alguns números são significativamente mais frequentes que outros'}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Distribution Tab */}
-      {activeTab === 'distribution' && (
-        <div className="space-y-4">
-          {/* Range Distribution Bar Chart */}
-          <div className={`rounded-xl p-4 ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-            <h4 className={`font-semibold text-sm mb-3 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-              📊 Distribuição por Faixas
-            </h4>
-            <div className="space-y-3">
-              {Object.entries(stats.distribution).map(([range, count]) => {
-                const maxDist = Math.max(...Object.values(stats.distribution));
-                const percentage = stats.totalDraws ? ((count / (stats.totalDraws * 6)) * 100).toFixed(1) : '0';
-                return (
-                  <div key={range} className="flex items-center gap-3">
-                    <span className="text-gray-300 text-sm w-14">{range}</span>
-                    <div className="flex-1 h-6 bg-black/30 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${isVirada
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500'
-                          : 'bg-gradient-to-r from-green-500 to-emerald-400'
-                          }`}
-                        style={{ width: `${maxDist > 0 ? (count / maxDist) * 100 : 0}%` }}
-                      />
-                    </div>
-                    <span className="text-gray-300 text-sm w-20 text-right">{count.toLocaleString()} ({percentage}%)</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Pie Charts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Odd vs Even */}
-            <div className={`rounded-xl p-4 ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <h4 className={`font-semibold text-sm mb-3 text-center ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-                🔢 Pares vs Ímpares
-              </h4>
-              <div className="flex items-center justify-center gap-4">
-                <div className="relative w-28 h-28">
-                  <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                    <circle
-                      cx="50" cy="50" r="40"
-                      fill="none"
-                      stroke="#3b82f6"
-                      strokeWidth="20"
-                    />
-                    <circle
-                      cx="50" cy="50" r="40"
-                      fill="none"
-                      stroke="#f59e0b"
-                      strokeWidth="20"
-                      strokeDasharray={`${(stats.oddCount / (stats.oddCount + stats.evenCount)) * 251.2} 251.2`}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">
-                      {((stats.oddCount / (stats.oddCount + stats.evenCount)) * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-                <div className="text-xs space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded bg-yellow-500"></span>
-                    <span className="text-gray-300">Ímpares: {stats.oddCount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded bg-blue-500"></span>
-                    <span className="text-gray-300">Pares: {stats.evenCount.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Low vs High */}
-            <div className={`rounded-xl p-4 ${isVirada ? 'bg-purple-900/30' : 'bg-green-900/30'}`}>
-              <h4 className={`font-semibold text-sm mb-3 text-center ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-                ⬆️ Baixos vs Altos
-              </h4>
-              <div className="flex items-center justify-center gap-4">
-                <div className="relative w-28 h-28">
-                  <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                    <circle
-                      cx="50" cy="50" r="40"
-                      fill="none"
-                      stroke="#ef4444"
-                      strokeWidth="20"
-                    />
-                    <circle
-                      cx="50" cy="50" r="40"
-                      fill="none"
-                      stroke="#22c55e"
-                      strokeWidth="20"
-                      strokeDasharray={`${(stats.lowCount / (stats.lowCount + stats.highCount)) * 251.2} 251.2`}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">
-                      {((stats.lowCount / (stats.lowCount + stats.highCount)) * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-                <div className="text-xs space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded bg-green-500"></span>
-                    <span className="text-gray-300">1-30: {stats.lowCount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded bg-red-500"></span>
-                    <span className="text-gray-300">31-60: {stats.highCount.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Summary Stats */}
-          <div className={`rounded-xl p-4 ${isVirada ? 'bg-purple-900/20' : 'bg-green-900/20'}`}>
-            <h4 className={`font-semibold text-sm mb-3 ${isVirada ? 'text-purple-300' : 'text-green-300'}`}>
-              📋 Resumo da Distribuição
-            </h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-xs">
-              <div>
-                <span className="text-gray-400">Total Sorteios</span>
-                <div className="text-white font-bold text-lg">{stats.totalDraws?.toLocaleString() || '0'}</div>
-              </div>
-              <div>
-                <span className="text-gray-400">Total Números</span>
-                <div className="text-white font-bold text-lg">{stats.totalDraws ? (stats.totalDraws * 6).toLocaleString() : '0'}</div>
-              </div>
-              <div>
-                <span className="text-gray-400">Prob. Teórica</span>
-                <div className="text-white font-bold text-lg">10%</div>
-              </div>
-              <div>
-                <span className="text-gray-400">Maior Desvio</span>
-                <div className="text-white font-bold text-lg">
-                  {stats.mean ? ((Math.max(stats.max, parseFloat(stats.mean) * 2 - stats.min) - parseFloat(stats.mean)) / parseFloat(stats.mean) * 100).toFixed(1) : '0'}%
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+/*
+// Statistics Section moved to src/pages/Statistics.jsx
+*/
 
 // Latest Draws Component
 function LatestDraws({ draws, isVirada }) {
@@ -903,11 +336,11 @@ function LatestDraws({ draws, isVirada }) {
                   <span>{prize4.winners} ganhador{prize4.winners !== 1 ? 'es' : ''} - {prize4.prize}</span>
                 </div>
               </div>
-            </div>
+            </div >
           );
         })}
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
 
@@ -1003,6 +436,7 @@ function DonationModal({ isOpen, onClose }) {
 }
 
 export default function MegaSenaPredictor() {
+  const navigate = useNavigate();
   // Fetch lottery data from API
   const { data: lotteryData, loading: dataLoading, error: dataError, lastUpdate, nextUpdate, refresh } = useLotteryData();
 
@@ -1281,6 +715,8 @@ export default function MegaSenaPredictor() {
             <span>💚</span>
             <span>Apoiar com PIX</span>
           </button>
+
+
         </div>
 
         {/* Ad Placement - Top */}
@@ -1322,6 +758,22 @@ export default function MegaSenaPredictor() {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex flex-col md:flex-row gap-3 mt-6 mb-2">
+            <button
+              onClick={() => navigate('/results')}
+              className="w-full bg-white/5 hover:bg-white/10 text-green-100 py-3 rounded-xl border border-white/10 transition-all text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <span>📅</span> Ver Últimos Resultados
+            </button>
+            <button
+              onClick={() => navigate('/statistics')}
+              className="w-full bg-white/5 hover:bg-white/10 text-green-100 py-3 rounded-xl border border-white/10 transition-all text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <span>📊</span> Ver Análise Estatística
+            </button>
           </div>
 
           {/* Shuffle Mode Input */}
@@ -1599,23 +1051,9 @@ export default function MegaSenaPredictor() {
             </ul>
           </div>
         )}
+        {/* Statistics Section Moved to Separate Page */}
 
-        {/* Statistics Section - Only show for non-shuffle modes */}
-        {!isShuffle && (
-          <StatisticsSection
-            frequencies={frequencies}
-            lotteryData={lotteryData}
-            isVirada={isVirada}
-          />
-        )}
 
-        {/* Latest Draws Section - Only show for non-shuffle modes */}
-        {/* {!isShuffle && lotteryData && (
-          <LatestDraws
-            draws={lotteryData.slice(-10).reverse()}
-            isVirada={isVirada}
-          />
-        )} */}
 
         {/* Algorithm Info - Normal modes */}
         {!isShuffle && (
