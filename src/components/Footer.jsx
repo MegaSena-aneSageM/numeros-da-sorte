@@ -45,7 +45,7 @@ export default function Footer() {
         {/* Social/Support Links */}
         <div className="flex justify-center gap-4 mt-4">
           <a
-            href="https://github.com"
+            href="https://github.com/MegaSena-aneSageM/numeros-da-sorte"
             target="_blank"
             rel="noopener noreferrer"
             className="text-green-400/60 hover:text-green-300 transition-colors"
